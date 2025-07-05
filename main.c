@@ -85,11 +85,15 @@ int main(void)
 	
 		lcd_init();
 
-  
-      // 初始化显示标题
-    lcd_draw_string(10, 30, "VOL", WHITE, BLACK);
-    lcd_draw_string(10, 50, "CUR", WHITE, BLACK);
-    lcd_draw_string(10, 70, "POW", WHITE, BLACK);
+//  
+//    // 绘制垂直线（左边缘）
+//    lcd_draw_line(20, 0, 20, LCD_HEIGHT-1, WHITE);
+    
+    // 显示横向标题
+    lcd_draw_string(0, 5, "VOLTAGE", WHITE, BLACK);
+    lcd_draw_string(0, 25, "CURRENT", WHITE, BLACK);
+    lcd_draw_string(0, 45, "POWER", WHITE, BLACK);
+    
 
 
     
@@ -112,7 +116,10 @@ int main(void)
 		I2C_BusScan();
 		INA226_Init();
 		
-
+     // 清除旧数值区域
+        lcd_fill(100, 5, 159, 20, BLACK); // 电压
+        lcd_fill(100, 25, 159, 40, BLACK); // 电流
+        lcd_fill(100, 45, 159, 60, BLACK); // 功率
 
     // 用于存储格式化字符串的缓冲区
     char voltage_str[20];
@@ -133,23 +140,23 @@ int main(void)
         float voltage = INA226_ReadVoltage();
         float current_mA = INA226_ReadCurrent_mA();
         float power = INA226_ReadPower();
-				  // 格式化数据为字符串
-        sprintf(voltage_str, "%.2f V", voltage);
-        sprintf(current_str, "%.2f MA", current_mA);
-        sprintf(power_str, "%.2f W", power);
-				
+//				  // 格式化数据为字符串
+//        sprintf(voltage_str, "%.2f V", voltage);
+//        sprintf(current_str, "%.2f MA", current_mA);
+//        sprintf(power_str, "%.2f W", power);
+//				
 				// 在LCD上显示数据（分三行）
         // 清除旧数值区域 (x=100, y=30, 宽度=60, 高度=15)
 //      +
 //        lcd_draw_string(80, 30, voltage_str, GREEN, BLACK);
-				 lcd_display_value(80, 30, voltage, "V", GREEN, BLACK);
+				 lcd_display_value(70, 5, voltage, "V", GREEN, BLACK);
 				  // 清除旧数值区域 (x=100, y=50, 宽度=60, 高度=15)
        
-        lcd_display_value(80, 50, current_mA, "mA", YELLOW, BLACK);
+        lcd_display_value(70, 25, current_mA, "mA", YELLOW, BLACK);
         
         // 清除旧数值区域 (x=100, y=70, 宽度=60, 高度=15)
         
-        lcd_display_value(80, 70, power, "W", CYAN, BLACK);
+        lcd_display_value(70, 45, power, "W", CYAN, BLACK);
 				
         
         printf("Bus Voltage: %.3f V\r\n", voltage);

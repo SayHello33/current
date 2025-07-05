@@ -4,8 +4,9 @@
 #include "string.h"
 
 // 定义横屏分辨率 (160x80)
-#define LCD_WIDTH 160
-#define LCD_HEIGHT 110
+#define ST7735_ROTATION  0
+
+
 // 数字字模 (8x16像素)
 const unsigned char digit_font[10][16] = {
     // '0'
@@ -272,27 +273,52 @@ void lcd_set_address(unsigned short x1, unsigned short y1, unsigned short x2, un
     if(x2 >= LCD_WIDTH) x2 = LCD_WIDTH - 1;
     if(y2 >= LCD_HEIGHT) y2 = LCD_HEIGHT - 1;
     
-    lcd_write_register(0x2A); 
-    lcd_write_data(x1>>8); 
-    lcd_write_data(x1&0xFF);
-    lcd_write_data(x2>>8); 
-    lcd_write_data(x2&0xFF);
-
-    lcd_write_register(0x2B); 
-    lcd_write_data(y1>>8); 
-    lcd_write_data(y1&0xFF);
-    lcd_write_data(y2>>8); 
-    lcd_write_data(y2&0xFF);
+    // 应用偏移 (横屏模式)
+    #if ST7735_ROTATION == 0
+        // 0°横屏模式 (标准横屏)
+        x1 += 1;  // X轴偏移1像素
+        x2 += 1;
+        y1 += 26; // Y轴偏移26像素
+        y2 += 26;
+    #elif ST7735_ROTATION == 180
+        // 180°横屏模式
+        // 翻转X坐标
+        x1 = 159 - x1;
+        x2 = 159 - x2;
+        // 翻转Y坐标
+        y1 = 79 - y1;
+        y2 = 79 - y2;
+        
+        // 应用偏移
+        x1 += 1;
+        x2 += 1;
+        y1 += 26;
+        y2 += 26;
+    #endif
     
-    lcd_write_register(0x2C);
+    // 发送命令
+    lcd_write_register(0x2A); // 列地址设置
+    lcd_write_data(x1 >> 8);
+    lcd_write_data(x1 & 0xFF);
+    lcd_write_data(x2 >> 8);
+    lcd_write_data(x2 & 0xFF);
+
+    lcd_write_register(0x2B); // 行地址设置
+    lcd_write_data(y1 >> 8);
+    lcd_write_data(y1 & 0xFF);
+    lcd_write_data(y2 >> 8);
+    lcd_write_data(y2 & 0xFF);
+    
+    lcd_write_register(0x2C); // 存储器写
 }
 
 void lcd_clear(unsigned short color)
 {
-    lcd_set_address(0, 0, LCD_WIDTH - 1, LCD_HEIGHT - 1);
+     // 设置整个物理RAM区域
+    lcd_set_address(0, 0, 131, 161);
     
-    // 计算像素总数
-    uint32_t total_pixels = LCD_WIDTH * LCD_HEIGHT;
+    // 计算像素总数 (132x162)
+    uint32_t total_pixels = 132 * 162;
     
     for(uint32_t i = 0; i < total_pixels; i++)
     {
@@ -302,10 +328,34 @@ void lcd_clear(unsigned short color)
 
 void lcd_draw_point(unsigned short x, unsigned short y, unsigned short color)
 {
-    // 边界检查
+    // 边界检查 (80x160)
     if(x >= LCD_WIDTH || y >= LCD_HEIGHT) return;
     
-    lcd_set_address(x, y, x, y);
+    // 应用偏移 (180°竖屏)
+    #if (ST7735_ROTATION == 180)
+        // 翻转坐标
+        unsigned short physical_x = LCD_WIDTH - 1 - x;
+        unsigned short physical_y = LCD_HEIGHT - 1 - y;
+        
+        // 应用偏移
+        physical_x += 26;
+        physical_y += 1;
+    #else
+        // 其他旋转模式的偏移保持不变
+        #if (ST7735_ROTATION == 0)
+            unsigned short physical_x = x + 26;
+            unsigned short physical_y = y + 1;
+        #elif (ST7735_ROTATION == 90)
+            unsigned short physical_x = x + 1;
+            unsigned short physical_y = y + 26;
+        #elif (ST7735_ROTATION == 270)
+            unsigned short physical_x = x + 1;
+            unsigned short physical_y = y + 26;
+        #endif
+    #endif
+    
+    // 设置地址并绘制
+    lcd_set_address(physical_x, physical_y, physical_x, physical_y);
     lcd_write_data_u16(color);
 }
 
@@ -470,17 +520,20 @@ void lcd_draw_char(unsigned short x, unsigned short y, char c, unsigned short fg
         char_data = punct_font[index];
     }
     
-    // 设置显示区域 (字符大小为8x16)
+   // 设置显示区域 (字符大小为8x16)
     lcd_set_address(x, y, x + 7, y + 15);
     
-    // 遍历字模并绘制
+    // 遍历字模并绘制 (横向显示不需要翻转)
     for (int row = 0; row < 16; row++) {
         unsigned char row_data = char_data[row];
         for (int col = 0; col < 8; col++) {
+            int draw_x = x + col;
+            int draw_y = y + row;
+            
             if (row_data & (0x80 >> col)) {
-                lcd_fast_draw_point(x + col, y + row, fg_color);
+                lcd_fast_draw_point(draw_x, draw_y, fg_color);
             } else {
-                lcd_fast_draw_point(x + col, y + row, bg_color);
+                lcd_fast_draw_point(draw_x, draw_y, bg_color);
             }
         }
     }
@@ -497,27 +550,18 @@ void lcd_draw_string(unsigned short x, unsigned short y, const char *str, unsign
     while (*str) {
         // 处理换行符
         if (*str == '\n') {
+            // 横屏模式下向下移动
             y += char_height + 2;
             curr_x = x;
             str++;
             continue;
         }
         
-        // 特殊处理单位字符
-        if (str[0] == 'V' || str[0] == 'W') {
-            // 确保不是"VOLT"或"WATT"中的V/W
-            if ((str == str || *(str-1) == ' ' || *(str-1) == ':') && 
-                (*(str+1) == ' ' || *(str+1) == '\0')) {
-                lcd_draw_char(curr_x, y, *str, fg_color, bg_color);
-            } else {
-                lcd_draw_char(curr_x, y, *str, fg_color, bg_color);
-            }
-        } else {
-            lcd_draw_char(curr_x, y, *str, fg_color, bg_color);
-        }
+        lcd_draw_char(curr_x, y, *str, fg_color, bg_color);
         
-        // 移动到下一个字符位置
+        // 横屏模式下向右移动
         curr_x += char_width + space_width;
+        
         str++;
     }
 }

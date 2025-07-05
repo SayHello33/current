@@ -53,7 +53,8 @@ extern const unsigned char uppercase_font[26][16];
 #define DARKBLUE	0X01CF	//?????
 #define LIGHTBLUE	0X7D7C	//????  
 #define GRAYBLUE	0X5458 //?????
-
+#define LCD_WIDTH 160
+#define LCD_HEIGHT 80
 void lcd_gpio_init(void);
 void lcd_st7735s_init(void);
 void lcd_write_register(unsigned char data);
