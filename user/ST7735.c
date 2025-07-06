@@ -28,7 +28,7 @@ const unsigned char digit_font[10][16] = {
     // '8'
     {0x00, 0x3C, 0x42, 0x81, 0x81, 0x81, 0x42, 0x3C, 0x42, 0x81, 0x81, 0x81, 0x42, 0x3C, 0x00, 0x00},
     // '9'
-    {0x00, 0x3C, 0x42, 0x81, 0x81, 0x81, 0x81, 0x43, 0x21, 0x11, 0x09, 0x05, 0x02, 0x00, 0x00, 0x00}
+    {  0x00, 0x7E, 0xC3, 0x81, 0x81, 0x81, 0xC3, 0x7E, 0x06, 0x0C, 0x18, 0x30, 0x60, 0xC0, 0x80, 0x00}
 };
 const unsigned char uppercase_font[26][16] = {
     // 'A'
@@ -311,11 +311,29 @@ void lcd_set_address(unsigned short x1, unsigned short y1, unsigned short x2, un
     
     lcd_write_register(0x2C); // 存储器写
 }
+static void lcd_clear_add(unsigned short x1, unsigned short y1, unsigned short x2, unsigned short y2)
+{
+ // 发送命令
+    lcd_write_register(0x2A); // 列地址设置
+    lcd_write_data(x1 >> 8);
+    lcd_write_data(x1 & 0xFF);
+    lcd_write_data(x2 >> 8);
+    lcd_write_data(x2 & 0xFF);
 
+    lcd_write_register(0x2B); // 行地址设置
+    lcd_write_data(y1 >> 8);
+    lcd_write_data(y1 & 0xFF);
+    lcd_write_data(y2 >> 8);
+    lcd_write_data(y2 & 0xFF);
+    
+    lcd_write_register(0x2C); // 存储器写
+
+}
+	
 void lcd_clear(unsigned short color)
 {
      // 设置整个物理RAM区域
-    lcd_set_address(0, 0, 131, 161);
+    lcd_set_address(0, 0, 161, 131);
     
     // 计算像素总数 (132x162)
     uint32_t total_pixels = 132 * 162;

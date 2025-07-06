@@ -116,10 +116,10 @@ int main(void)
 		I2C_BusScan();
 		INA226_Init();
 		
-     // 清除旧数值区域
-        lcd_fill(100, 5, 159, 20, BLACK); // 电压
-        lcd_fill(100, 25, 159, 40, BLACK); // 电流
-        lcd_fill(100, 45, 159, 60, BLACK); // 功率
+//     // 清除旧数值区域
+//        lcd_fill(100, 5, 159, 20, BLACK); // 电压
+//        lcd_fill(100, 25, 159, 40, BLACK); // 电流
+//        lcd_fill(100, 45, 159, 60, BLACK); // 功率
 
     // 用于存储格式化字符串的缓冲区
     char voltage_str[20];
@@ -149,14 +149,14 @@ int main(void)
         // 清除旧数值区域 (x=100, y=30, 宽度=60, 高度=15)
 //      +
 //        lcd_draw_string(80, 30, voltage_str, GREEN, BLACK);
-				 lcd_display_value(70, 5, voltage, "V", GREEN, BLACK);
-				  // 清除旧数值区域 (x=100, y=50, 宽度=60, 高度=15)
-       
-        lcd_display_value(70, 25, current_mA, "mA", YELLOW, BLACK);
-        
-        // 清除旧数值区域 (x=100, y=70, 宽度=60, 高度=15)
-        
-        lcd_display_value(70, 45, power, "W", CYAN, BLACK);
+				 lcd_display_value(70, 5, voltage, "   V", GREEN, BLACK);
+//				  // 清除旧数值区域 (x=100, y=50, 宽度=60, 高度=15)
+//       
+        lcd_display_value(70, 25, current_mA, "  mA", YELLOW, BLACK);
+//        
+//        // 清除旧数值区域 (x=100, y=70, 宽度=60, 高度=15)
+//        
+        lcd_display_value(70, 45, power, "  W", CYAN, BLACK);
 				
         
         printf("Bus Voltage: %.3f V\r\n", voltage);
